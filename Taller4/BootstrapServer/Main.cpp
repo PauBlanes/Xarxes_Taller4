@@ -4,70 +4,60 @@
 #include <cstring>
 #include <iostream>
 
+using namespace std;
+using namespace sf;
+
+#define NUM_PLAYERS 4
+
+struct PeerInfo {
+	string IP;
+	unsigned short port;
+};
+
 int main()
 {
-	sf::IpAddress ip = sf::IpAddress::getLocalAddress();
-	sf::TcpSocket socket;
-	char connectionType, mode;
-	char buffer[2000];
-	std::size_t received;
-	std::string text = "Connected to: ";
+	vector <PeerInfo> peers;
+		
+	TcpListener listener;
+	Socket::Status listStatus = listener.listen(5000);
+	if (listStatus != Socket::Done)
+		cout << "port error" << endl;
+	else
+		cout << "port ok" << endl;
 
-	std::cout << "Enter (s) for Server, Enter (c) for Client: ";
-	std::cin >> connectionType;
-
-	if (connectionType == 's')
-	{
-		sf::TcpListener listener;
-		listener.listen(5000);
-		listener.accept(socket);
-		text += "Server";
-		mode = 's';
-		listener.close();
-	}
-	else if (connectionType == 'c')
-	{
-		socket.connect(ip, 5000);
-		text += "Client";
-		mode = 'r';
-	}
-
-	socket.send(text.c_str(), text.length() + 1);
-	socket.receive(buffer, sizeof(buffer), received);
-
-	std::cout << buffer << std::endl;
-
-	bool done = false;
-	while (!done)
-	{
-		if (mode == 's')
-		{
-			std::getline(std::cin, text);
-			if (text.length() > 0)
-			{
-				socket.send(text.c_str(), text.length() + 1);
-				mode = 'r';
-				if (text == "exit")
-				{
-					break;
-				}
+	//Fins que s'hagin connectat tots els peers anem escoltant
+	for (int i = 0; i < NUM_PLAYERS; i++) {
+		TcpSocket newSock;
+		
+		Socket::Status status = listener.accept(newSock);
+		if (status == Socket::Done) {
+			
+			//Fem un packet amb tota la info dels peers anteriors que tenim
+			int currentPeers = peers.size();
+			Packet aPacket;
+			aPacket << currentPeers;
+			for (int j = 0; j < peers.size(); j++) {
+				aPacket << peers[j].IP << peers[j].port;
 			}
+
+			//enviem tota aquesta info al peer que s'ha conectat
+			newSock.send(aPacket);
+
+			//Afegim el nou peer al array de peers
+			string peerIp = newSock.getRemoteAddress().toString();
+			PeerInfo newPeer = { peerIp, newSock.getRemotePort() };
+			peers.push_back(newPeer);
+
+			//desconectem aquest peer, ja no el necessitem
+			newSock.disconnect();
+
+			cout << "Connectado nuevo peer" << endl;
 		}
-		else if (mode == 'r')
-		{
-			socket.receive(buffer, sizeof(buffer), received);
-			if (received > 0)
-			{
-				std::cout << "Received: " << buffer << std::endl;
-				mode = 's';
-				if (strcmp(buffer, "exit") == 0)
-				{
-					break;
-				}
-			}
+		else {
+			cout << "Error de conexion" << endl;
 		}
 	}
-
-	socket.disconnect();
+	listener.close();
+	
 	return 0;
 }
