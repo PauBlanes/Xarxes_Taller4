@@ -4,70 +4,52 @@
 #include <cstring>
 #include <iostream>
 
+using namespace std;
+using namespace sf;
+
+struct PeerInfo {
+	string IP;
+	unsigned short port;
+};
+
 int main()
 {
-	sf::IpAddress ip = sf::IpAddress::getLocalAddress();
-	sf::TcpSocket socket;
-	char connectionType, mode;
-	char buffer[2000];
-	std::size_t received;
-	std::string text = "Connected to: ";
+	//ESTABLIR CONNEXIÓ
+	TcpSocket sock;
+	IpAddress ip = IpAddress::getLocalAddress();
+	sock.connect(ip, 5000);
 
-	std::cout << "Enter (s) for Server, Enter (c) for Client: ";
-	std::cin >> connectionType;
-
-	if (connectionType == 's')
-	{
-		sf::TcpListener listener;
-		listener.listen(5000);
-		listener.accept(socket);
-		text += "Server";
-		mode = 's';
-		listener.close();
-	}
-	else if (connectionType == 'c')
-	{
-		socket.connect(ip, 5000);
-		text += "Client";
-		mode = 'r';
-	}
-
-	socket.send(text.c_str(), text.length() + 1);
-	socket.receive(buffer, sizeof(buffer), received);
-
-	std::cout << buffer << std::endl;
-
-	bool done = false;
-	while (!done)
-	{
-		if (mode == 's')
-		{
-			std::getline(std::cin, text);
-			if (text.length() > 0)
-			{
-				socket.send(text.c_str(), text.length() + 1);
-				mode = 'r';
-				if (text == "exit")
-				{
-					break;
+	Packet packet;
+	sock.receive(packet);
+	
+	SocketSelector selector;
+	int currentPeers; string newIp; unsigned short newPort;
+	if (packet >> currentPeers){ //si ho hem rebut ok
+		
+		for (int i = 0; i < currentPeers; i++) {
+			
+			if (packet >> newIp && packet >> newPort) { //si ho hem rebut ok
+				
+				TcpSocket *newPeer = new TcpSocket;
+				Socket::Status s = newPeer->connect(newIp, 5000); //teoricament el newPort esta b pero si el poso aqui no va
+				if (s == Socket::Done) {
+					selector.add(*newPeer);
+					cout << "conectado al peer con ip : " << newIp << endl;
 				}
-			}
-		}
-		else if (mode == 'r')
-		{
-			socket.receive(buffer, sizeof(buffer), received);
-			if (received > 0)
-			{
-				std::cout << "Received: " << buffer << std::endl;
-				mode = 's';
-				if (strcmp(buffer, "exit") == 0)
-				{
-					break;
+				else {
+					cout << "Error al conectar con peer con ip : " << newIp << endl;
 				}
+				delete newPeer;
 			}
+			else
+				cout << "failed to extract peer data" << endl;			
 		}
 	}
-
-	socket.disconnect();
+	else
+		cout << "failed to extract numPeers of packet" << endl;
+	
+		
+	system("pause");
+	
 	return 0;
 }
