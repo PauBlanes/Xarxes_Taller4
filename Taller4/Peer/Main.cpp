@@ -38,7 +38,7 @@ int main()
 		Socket::Status s = newPeer->connect(newIp, newPort); //teoricament el newPort esta b pero si el poso aqui no va
 		if (s == Socket::Done) {
 			selector.add(*newPeer);
-			cout << "conectado al peer con ip : " << newIp << " en el puerto " << newPort << endl;
+			cout << "conectado al peer con ip : " << newIp << " en su puerto : " << newPort << endl;
 		}
 		else {
 			cout << "Error de tipo " << s <<" al conectar con peer con ip : " << newIp << " en el puerto " << newPort << endl;
@@ -54,14 +54,15 @@ int main()
 			cout << "port error" << endl;
 		else
 			cout << "port " << myPort << " ok" << endl;
-		
+		selector.add(listener);
+
 		for (int i = 0; i < OTHER_PLAYERS - currentPeers; i++) {
 			cout << "ESPERANDO NUEVOS JUGADORES..." << endl;
 			TcpSocket *newPeer = new TcpSocket;
 			Socket::Status s = listener.accept(*newPeer);
 			if (s == Socket::Done) {
 				selector.add(*newPeer);
-				cout << "conectado al peer con ip : " << newPeer->getRemoteAddress() << endl;
+				cout << "conectado al peer con ip : " << newPeer->getRemoteAddress() << "en su puerto : " << newPeer->getRemotePort() << endl;
 			}
 			else
 				cout << "error al aceptar nuevo peer" << endl;
@@ -70,7 +71,7 @@ int main()
 		listener.close();
 	}
 			
-	cout << "DONE!" << endl;
+	cout << "TODOS LOS PEERS SE HAN CONECTADO CORRECTAMENTE!" << endl;
 	system("pause");
 	return 0;
 }
