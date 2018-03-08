@@ -7,11 +7,11 @@
 using namespace std;
 using namespace sf;
 
-#define NUM_PLAYERS 4
+#define NUM_PLAYERS 3
 
 struct PeerInfo {
 	string IP;
-	unsigned short port;
+	unsigned int port;
 };
 
 int main()
@@ -45,9 +45,9 @@ int main()
 
 			//Afegim el nou peer al array de peers
 			string peerIp = newSock.getRemoteAddress().toString();
-			PeerInfo newPeer = { peerIp, newSock.getRemotePort() };
+			PeerInfo newPeer = { peerIp, newSock.getRemotePort() };			
 			peers.push_back(newPeer);
-
+			cout << newPeer.port << endl;
 			//desconectem aquest peer, ja no el necessitem
 			newSock.disconnect();
 
